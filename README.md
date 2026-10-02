@@ -13,6 +13,10 @@ npm run dev
 
 公開用の静的ファイルは `npm run build` で `dist/` に生成されます。公開環境はHTTPSが必要です。プレビューは `npm run preview` で開けます。
 
+## GitHub Pagesで公開
+
+GitHubリポジトリの **Settings → Pages → Build and deployment → Source** を **GitHub Actions** に設定してください。その後、`main` または `docs/mobile-app-requirements` ブランチへpushすると、ワークフローがビルドと公開を行います。公開URLは `https://eternitybios-dot.github.io/PINGPONG/` です。
+
 練習記録・プロフィール・お気に入りは使用中のブラウザに保存されます。アカウント登録、クラウド同期、広告はありません。オフライン利用はオンラインでの初回読み込みと画面の保存後に有効になります。
 
 ## 内容

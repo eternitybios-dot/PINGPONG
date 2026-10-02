@@ -27,19 +27,21 @@ function emit(partial: Partial<PwaState>) {
 }
 
 function appResources(): string[] {
+  const baseUrl = new URL(import.meta.env.BASE_URL, location.origin)
+  const basePath = baseUrl.pathname
   const urls = [
-    new URL('/', location.origin).href,
-    new URL('/manifest.webmanifest', location.origin).href,
-    new URL('/pingpong.svg', location.origin).href,
-    new URL('/pingpong-180.png', location.origin).href,
-    new URL('/pingpong-192.png', location.origin).href,
-    new URL('/pingpong-512.png', location.origin).href,
+    baseUrl.href,
+    new URL('manifest.webmanifest', baseUrl).href,
+    new URL('pingpong.svg', baseUrl).href,
+    new URL('pingpong-180.png', baseUrl).href,
+    new URL('pingpong-192.png', baseUrl).href,
+    new URL('pingpong-512.png', baseUrl).href,
   ]
   for (const entry of performance.getEntriesByType('resource')) {
     try {
       const url = new URL(entry.name)
       if (url.origin !== location.origin || url.pathname.endsWith('/sw.js')) continue
-      if (/\.(?:js|mjs|css|svg|webmanifest)(?:$|\?)/i.test(url.href) || url.pathname.startsWith('/src/')) urls.push(url.href)
+      if (/\.(?:js|mjs|css|svg|webmanifest)(?:$|\?)/i.test(url.href) || url.pathname.startsWith(`${basePath}src/`)) urls.push(url.href)
     } catch {
       // Third party fonts and other external resources are optional and are not cached.
     }
@@ -112,7 +114,8 @@ export function startPwa(listener: (state: PwaState) => void): () => void {
   window.addEventListener('beforeinstallprompt', onBeforeInstall)
   window.addEventListener('appinstalled', onInstalled)
 
-  navigator.serviceWorker.register('/sw.js', { scope: '/', updateViaCache: 'none' }).then(async (registration) => {
+  const baseUrl = new URL(import.meta.env.BASE_URL, location.origin)
+  navigator.serviceWorker.register(new URL('sw.js', baseUrl).href, { scope: baseUrl.pathname, updateViaCache: 'none' }).then(async (registration) => {
     workerRegistration = registration
     registration.addEventListener('updatefound', () => {
       const installing = registration.installing

@@ -1,6 +1,7 @@
 const CACHE_PREFIX = 'pingpong-offline-'
 const CURRENT_CACHE = 'pingpong-offline-v1.0.0'
-const APP_SHELL = ['/', '/index.html', '/manifest.webmanifest', '/pingpong.svg', '/pingpong-180.png', '/pingpong-192.png', '/pingpong-512.png']
+const APP_ROOT = new URL('./', self.location.href).href
+const APP_SHELL = ['./', './index.html', './manifest.webmanifest', './pingpong.svg', './pingpong-180.png', './pingpong-192.png', './pingpong-512.png'].map((path) => new URL(path, APP_ROOT).href)
 
 self.addEventListener('install', (event) => {
   event.waitUntil(caches.open(CURRENT_CACHE).then((cache) => cache.addAll(APP_SHELL)))
@@ -20,7 +21,7 @@ async function sendToClient(event, data) {
 
 async function cacheList(urls, event) {
   const cache = await caches.open(CURRENT_CACHE)
-  const unique = [...new Set([self.location.origin + '/', ...urls.filter((url) => {
+  const unique = [...new Set([APP_ROOT, ...urls.filter((url) => {
     try { return new URL(url).origin === self.location.origin } catch { return false }
   })])]
   let cached = 0
@@ -44,7 +45,7 @@ async function cacheList(urls, event) {
     await sendToClient(event, { type: 'PRECACHE_ERROR', cached, total: unique.length, message: failures[0] })
     return
   }
-  await cache.put(`${self.location.origin}/__pingpong_prepared__`, new Response(String(Date.now()), { headers: { 'content-type': 'text/plain' } }))
+  await cache.put(`${APP_ROOT}__pingpong_prepared__`, new Response(String(Date.now()), { headers: { 'content-type': 'text/plain' } }))
   await sendToClient(event, { type: 'PRECACHE_COMPLETE', cached, total: unique.length })
 }
 
@@ -54,7 +55,7 @@ async function inspectCache(urls, event) {
     try { return new URL(url).origin === self.location.origin } catch { return false }
   }))]
   const cached = await Promise.all(requests.map((url) => cache.match(url, { ignoreVary: true }).then(Boolean)))
-  const rootReady = Boolean(await cache.match(self.location.origin + '/'))
+  const rootReady = Boolean(await cache.match(APP_ROOT))
   const ready = rootReady && requests.length > 0 && cached.every(Boolean)
   await sendToClient(event, { type: 'CACHE_STATUS', ready, cached: cached.filter(Boolean).length, total: requests.length })
 }
@@ -77,12 +78,12 @@ self.addEventListener('fetch', (event) => {
         const response = await fetch(request)
         if (response.ok) {
           const cache = await caches.open(CURRENT_CACHE)
-          await cache.put(self.location.origin + '/', response.clone())
+          await cache.put(APP_ROOT, response.clone())
         }
         return response
       } catch {
         const cache = await caches.open(CURRENT_CACHE)
-        return await cache.match(self.location.origin + '/') ?? new Response('オフラインで開ける画面は、オンラインのときに一度読み込んでください。', { status: 503, headers: { 'Content-Type': 'text/plain; charset=utf-8' } })
+        return await cache.match(APP_ROOT) ?? new Response('オフラインで開ける画面は、オンラインのときに一度読み込んでください。', { status: 503, headers: { 'Content-Type': 'text/plain; charset=utf-8' } })
       }
     })())
     return
